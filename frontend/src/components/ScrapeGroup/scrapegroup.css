@@ -1,0 +1,23 @@
+#scraperWrapper{
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-top: 4vw;
+}
+
+#scraperInput{
+    font-family: sans-serif;
+    font-size: 1.5rem;
+    width: 45vw;
+    padding: 0.2vw 1vw;
+}
+
+#scraperSubmit{
+    font-size: 1.5rem;
+    padding: 0.2vw 1vw;
+    cursor: pointer;
+}
+
+#scraperStatus{
+    text-align: center;
+}

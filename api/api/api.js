@@ -2,10 +2,10 @@ const puppeteer = require('puppeteer');
 const fsPromise = require("fs/promises")
 const express = require("express")
 const router = express.Router()
+const converter = require('json-2-csv');
 
 // BEGIN SETTINGS
 
-const filterRegEx = /(cleaning|pressure|soft|washing)/gi
 const pathToBrowserExecutable = "C:/Program Files (x86)/Google/Chrome/Application/chrome.exe"
 
 // END SETTINGS
@@ -23,15 +23,17 @@ router.get("/checkscraperstatus", (req, res)=>{
     }
 })
 
-router.get("/scrapegroup/:group", async(req, res)=>{
+router.get("/scrapegroup/:group/:regex", async(req, res)=>{
     let PAGE = ""
     let GROUP = ""
     let PAGE_TITLE = ""
+    let filterRegEx
     if(req.params.group == undefined){
         res.sendStatus(400)
     }else{
         PAGE = decodeURIComponent(req.params.group) + "/members"
         GROUP = decodeURIComponent(req.params.group)
+        filterRegEx = new RegExp(decodeURIComponent(req.params.regex), "gi")
     }
     const sleep = async (ms) => {
         return new Promise((res, rej) => {
@@ -48,7 +50,7 @@ router.get("/scrapegroup/:group", async(req, res)=>{
       
       (async () => {
         const browser = await puppeteer.launch({
-          headless: false,
+          headless: "new",
           executablePath: pathToBrowserExecutable,
           args: ['--no-sandbox', '--disable-setuid-sandbox', "--disable-notifications"],
           'screen-resolution': '1600x900',
@@ -146,8 +148,8 @@ router.get("/scrapegroup/:group", async(req, res)=>{
               const filteredReviews = reviewsJson.filter((data)=>{
                 return (filterRegEx.test(data.info))
               })
-      
-              await fsPromise.writeFile(`./outputs/${PAGE_TITLE}_Group_Leads_output.txt`, JSON.stringify(filteredReviews))
+              const csv = await converter.json2csv(filteredReviews);
+              await fsPromise.writeFile(`./outputs/${PAGE_TITLE}_Group_Leads_output.csv`, csv)
       
               
       
