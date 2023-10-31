@@ -7,11 +7,14 @@ const { existsSync } = require('fs');
 
 // ---------------- BEGIN SETTINGS ----------------
 
-const pathToBrowserExecutable = "C:/Program Files/Google/Chrome/Application/chrome.exe"
+const pathToBrowserExecutable = "C:/Program Files (x86)/Google/Chrome/Application/chrome.exe"
 
 const loadTimeout = 10000;
 
 const renderScreen = false;
+
+// LEAVE null TO STOP AT GROUP END - ELSE SPECIFY ENDTIME IN MS
+const endTime = null;
 
 
 // Leave false to get JSON
@@ -110,26 +113,33 @@ router.get("/scrapegroup/:group/:regex", async(req, res)=>{
            const checkScrollDone = ()=> new Promise(async (resolve, reject) => {
             
             
-              await page.evaluate(async (GROUP, loadTimeout) => {
+              await page.evaluate(async (GROUP, loadTimeout, endTime) => {
                 let PAGe_TITLE = document.querySelector(`a[href='${GROUP}/']`).textContent
-                console.log("BRO", PAGe_TITLE)
 
                 return await new Promise((resolve, reject) => {
                 let topAmt = 10
                 
                 const bodyElem = document.querySelector("body")
-                setInterval(()=>{
-                  console.log("here boi")
-                  const bodyHeight = bodyElem.getBoundingClientRect().y
-                  if(bodyHeight < topAmt){
-                    topAmt = bodyHeight
-                  }else{
-                     resolve({PAGE_TITLE:PAGe_TITLE})
-                  }
-                }, loadTimeout)
+                if(endTime === null){
+                  setInterval(()=>{
+                    console.log("here boi")
+                    const bodyHeight = bodyElem.getBoundingClientRect().y
+  
+                    if(bodyHeight < topAmt){
+                      topAmt = bodyHeight
+                    }else{
+                       resolve({PAGE_TITLE:PAGe_TITLE})
+                    }
+                  }, loadTimeout)
+                }else{
+                  setTimeout(()=>{
+                    resolve({PAGE_TITLE:PAGe_TITLE})
+                  }, endTime)
+                }
+                
       
               })
-            }, GROUP, loadTimeout).then((data)=>{
+            }, GROUP, loadTimeout, endTime).then((data)=>{
                 resolve({PAGE_TITLE: data.PAGE_TITLE})
             })
               
