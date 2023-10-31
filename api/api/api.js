@@ -6,7 +6,7 @@ const converter = require('json-2-csv');
 
 // BEGIN SETTINGS
 
-const pathToBrowserExecutable = "C:/Program Files (x86)/Google/Chrome/Application/chrome.exe"
+const pathToBrowserExecutable = "C:/Program Files/Google/Chrome/Application/chrome.exe"
 
 // END SETTINGS
 
@@ -50,7 +50,7 @@ router.get("/scrapegroup/:group/:regex", async(req, res)=>{
       
       (async () => {
         const browser = await puppeteer.launch({
-          headless: "new",
+          headless: false,
           executablePath: pathToBrowserExecutable,
           args: ['--no-sandbox', '--disable-setuid-sandbox', "--disable-notifications"],
           'screen-resolution': '1600x900',
@@ -74,9 +74,9 @@ router.get("/scrapegroup/:group/:regex", async(req, res)=>{
       
           console.log("login done");
           await page.waitForNavigation();
-          const bodyElem =  await page.waitForSelector("body")
           await page.waitForSelector("a[role='link']")
-      
+          await page.type("input[placeholder='Find a member']", " ");
+          await page.click('div[role="main"]');
           const downInterval = setInterval(down, 500)
           async function down(){
       
@@ -103,7 +103,7 @@ router.get("/scrapegroup/:group/:regex", async(req, res)=>{
                   }else{
                      resolve({PAGE_TITLE:PAGe_TITLE})
                   }
-                }, 2000)
+                }, 10000)
       
               })
             }, GROUP).then((data)=>{
