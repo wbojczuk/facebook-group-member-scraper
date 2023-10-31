@@ -12,7 +12,7 @@ Node/Puppeteer script to scrape facebook groups and return users who match RegEx
 
 4. Verify that the "pathToBrowserExecutable" variable in the "api/api.js" file is the correct path.
 
-5. Run "npm run dev" to start the server. The server by default uses port :3000 at localhost:3000 . You can change this, and the whitelisted urls in "index.js"
+5. Run "npm run dev" to start the server. The server by default uses port :3000 at localhost3000 . You can change this, and the whitelisted urls in "index.js"
 
 6. Open the url http://localhost:3000 in your browser, enter the facebook group url (EG: https://www.facebook.com/groups/000000000000000/) and the RegEx to test for below.
 
