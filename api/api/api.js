@@ -3,10 +3,16 @@ const fsPromise = require("fs/promises")
 const express = require("express")
 const router = express.Router()
 const converter = require('json-2-csv');
+const { existsSync } = require('fs');
 
 // BEGIN SETTINGS
 
 const pathToBrowserExecutable = "C:/Program Files/Google/Chrome/Application/chrome.exe"
+const loadTimeout = 10000
+
+// LEAVE null TO SORT BY DATE - ELSE SEARCH FOR TERM
+
+const seachTerm = null;
 
 // END SETTINGS
 
@@ -31,8 +37,12 @@ router.get("/scrapegroup/:group/:regex", async(req, res)=>{
     if(req.params.group == undefined){
         res.sendStatus(400)
     }else{
-        PAGE = decodeURIComponent(req.params.group) + "/members"
-        GROUP = decodeURIComponent(req.params.group)
+        let tempPage = decodeURIComponent(req.params.group)
+        if(/\/$/.test(tempPage)){
+          tempPage = tempPage.slice(0,-1);
+        }
+        PAGE = tempPage + "/members"
+        GROUP = tempPage
         filterRegEx = new RegExp(decodeURIComponent(req.params.regex), "gi")
     }
     const sleep = async (ms) => {
@@ -53,10 +63,14 @@ router.get("/scrapegroup/:group/:regex", async(req, res)=>{
           headless: false,
           executablePath: pathToBrowserExecutable,
           args: ['--no-sandbox', '--disable-setuid-sandbox', "--disable-notifications"],
-          'screen-resolution': '1600x900',
+          'screen-resolution': '1920x1080',
           protocolTimeout: 0
         });
         const page = await browser.newPage();
+        await page.setViewport({
+          width: 1920,
+          height: 1080
+      })
         let login = async () => {
           // login
           await page.goto(PAGE, {
@@ -75,7 +89,9 @@ router.get("/scrapegroup/:group/:regex", async(req, res)=>{
           console.log("login done");
           await page.waitForNavigation();
           await page.waitForSelector("a[role='link']")
-          await page.type("input[placeholder='Find a member']", " ");
+          if(seachTerm !== null){
+            await page.type("input[placeholder='Find a member']", " ");
+          } 
           await page.click('div[role="main"]');
           const downInterval = setInterval(down, 500)
           async function down(){
@@ -87,7 +103,7 @@ router.get("/scrapegroup/:group/:regex", async(req, res)=>{
            const checkScrollDone = ()=> new Promise(async (resolve, reject) => {
             
             
-              await page.evaluate(async (GROUP) => {
+              await page.evaluate(async (GROUP, loadTimeout) => {
                 let PAGe_TITLE = document.querySelector(`a[href='${GROUP}/']`).textContent
                 console.log("BRO", PAGe_TITLE)
 
@@ -103,10 +119,10 @@ router.get("/scrapegroup/:group/:regex", async(req, res)=>{
                   }else{
                      resolve({PAGE_TITLE:PAGe_TITLE})
                   }
-                }, 10000)
+                }, loadTimeout)
       
               })
-            }, GROUP).then((data)=>{
+            }, GROUP, loadTimeout).then((data)=>{
                 resolve({PAGE_TITLE: data.PAGE_TITLE})
             })
               
@@ -149,6 +165,11 @@ router.get("/scrapegroup/:group/:regex", async(req, res)=>{
                 return (filterRegEx.test(data.info))
               })
               const csv = await converter.json2csv(filteredReviews);
+
+              if(!existsSync("./outputs")){
+                await fsPromise.mkdir("./outputs")
+              }
+             
               await fsPromise.writeFile(`./outputs/${PAGE_TITLE}_Group_Leads_output.csv`, csv)
       
               
@@ -158,6 +179,7 @@ router.get("/scrapegroup/:group/:regex", async(req, res)=>{
         
         await login();
         await browser.close()
+        console.log("scraping complete")
         isDone = true
       })();
 })
