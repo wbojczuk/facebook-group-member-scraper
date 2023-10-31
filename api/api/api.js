@@ -5,16 +5,23 @@ const router = express.Router()
 const converter = require('json-2-csv');
 const { existsSync } = require('fs');
 
-// BEGIN SETTINGS
+// ---------------- BEGIN SETTINGS ----------------
 
 const pathToBrowserExecutable = "C:/Program Files/Google/Chrome/Application/chrome.exe"
-const loadTimeout = 10000
+
+const loadTimeout = 10000;
+
+const renderScreen = false;
+
+
+// Leave false to get JSON
+const exportCSV = true;
+
 
 // LEAVE null TO SORT BY DATE - ELSE SEARCH FOR TERM
-
 const seachTerm = null;
 
-// END SETTINGS
+// ---------------- END SETTINGS ----------------
 
 
 
@@ -60,7 +67,7 @@ router.get("/scrapegroup/:group/:regex", async(req, res)=>{
       
       (async () => {
         const browser = await puppeteer.launch({
-          headless: false,
+          headless: (renderScreen) ? false : "new",
           executablePath: pathToBrowserExecutable,
           args: ['--no-sandbox', '--disable-setuid-sandbox', "--disable-notifications"],
           'screen-resolution': '1920x1080',
@@ -164,17 +171,21 @@ router.get("/scrapegroup/:group/:regex", async(req, res)=>{
               const filteredReviews = reviewsJson.filter((data)=>{
                 return (filterRegEx.test(data.info))
               })
-              const csv = await converter.json2csv(filteredReviews);
 
               if(!existsSync("./outputs")){
                 await fsPromise.mkdir("./outputs")
               }
-             
-              await fsPromise.writeFile(`./outputs/${PAGE_TITLE}_Group_Leads_output.csv`, csv)
-      
-              
-      
-      
+
+              let exportData
+
+              if(exportCSV){
+                exportData = await converter.json2csv(filteredReviews);
+                await fsPromise.writeFile(`./outputs/${PAGE_TITLE}_Group_Leads_output.csv`, exportData)
+              }else{
+                exportData = filteredReviews;
+                await fsPromise.writeFile(`./outputs/${PAGE_TITLE}_Group_Leads_output.json`, JSON.stringify(exportData))
+              }
+
         }
         
         await login();
